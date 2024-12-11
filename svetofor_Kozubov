@@ -1,0 +1,92 @@
+import tkinter as tk
+import time
+import threading
+
+class TrafficLightSimulation:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Симуляция светофора")
+
+        self.green_duration = tk.IntVar(value=5)
+        self.yellow_duration = tk.IntVar(value=2)
+        self.red_duration = tk.IntVar(value=5)
+        self.car_count = tk.IntVar(value=0)
+
+        self.running = False
+
+        self.create_widgets()
+
+        self.canvas = tk.Canvas(master, width=400, height=200, bg="white")
+        self.canvas.pack(pady=20)
+
+    def create_widgets(self):
+        tk.Label(self.master, text="Длительность зеленого сигнала (с):").pack()
+        tk.Spinbox(self.master, from_=1, to=60, textvariable=self.green_duration).pack()
+
+        tk.Label(self.master, text="Длительность желтого сигнала (с):").pack()
+        tk.Spinbox(self.master, from_=1, to=60, textvariable=self.yellow_duration).pack()
+
+        tk.Label(self.master, text="Длительность красного сигнала (с):").pack()
+        tk.Spinbox(self.master, from_=1, to=60, textvariable=self.red_duration).pack()
+
+        tk.Label(self.master, text="Количество автомобилей на перекрестке:").pack()
+        tk.Scale(self.master, from_=0, to=20, orient=tk.HORIZONTAL, variable=self.car_count).pack()
+
+        tk.Button(self.master, text="Запустить анимацию", command=self.start_animation).pack()
+        tk.Button(self.master, text="Сбросить параметры", command=self.reset_parameters).pack()
+
+        self.light_label = tk.Label(self.master, text="", font=("Helvetica", 48))
+        self.light_label.pack()
+
+    def start_animation(self):
+        if not self.running:
+            self.running = True
+            threading.Thread(target=self.run_traffic_light).start()
+
+    def reset_parameters(self):
+        self.running = False
+        self.canvas.delete("all")
+        self.light_label.config(text="")
+
+    def run_traffic_light(self):
+        while self.running:
+            self.light_label.config(text="🟢")
+            self.move_cars()
+            time.sleep(self.green_duration.get())
+
+            self.light_label.config(text="🟡")
+            time.sleep(self.yellow_duration.get())
+
+            self.light_label.config(text="🔴")
+            self.stop_cars()
+            time.sleep(self.red_duration.get())
+
+    def move_cars(self):
+        car_width = 20
+        car_height = 10
+
+        for i in range(self.car_count.get()):
+            x_start = 0
+            y_position = 50 + i * 15
+
+            car = self.canvas.create_rectangle(x_start, y_position,
+                                               x_start + car_width,
+                                               y_position + car_height,
+                                               fill="blue")
+
+            for x in range(0, 400 - car_width + 1, 5):
+                if not self.running:
+                    return
+
+                if self.light_label.cget("text") == "🟢":
+                    self.canvas.move(car, 5, 0)
+
+                time.sleep(0.05)
+
+    def stop_cars(self):
+        self.canvas.delete("all")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TrafficLightSimulation(root)
+    root.mainloop()
